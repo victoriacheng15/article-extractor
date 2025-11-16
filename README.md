@@ -4,7 +4,8 @@ An **automated data pipeline** that orchestrates ETL (Extract, Transform, Load) 
 
 **Deployment Options:**
 
-- **Serverless**: Scheduled GitHub Actions workflows (infrastructure-free)
+- **Serverless**: GitHub Actions runs the workflow on a scheduled cron to automate extraction and processing
+- **CI/CD**: Jenkins pipeline for automated Docker image builds and publishing to GitHub Container Registry (GHCR)
 - **Traditional**: Cron jobs or Docker containers
 - **Manual**: CLI execution for ad-hoc runs
 
@@ -16,6 +17,7 @@ An **automated data pipeline** that orchestrates ETL (Extract, Transform, Load) 
 - **Google Sheets Integration**: OAuth-authenticated API for reliable data delivery
 - **Flexible Deployment**: GitHub Actions (serverless), Docker, cron, or CLI execution
 - **Production-Grade Error Handling**: Provider-level fault tolerance with comprehensive logging
+- **Automated Docker Image Builds**: Jenkins pipeline builds and pushes Docker images to GHCR on demand or schedule
 
 ## 🚀 Quick Start
 
@@ -25,6 +27,7 @@ Please refer to this [Installation Guide](docs/installation.md)
 
 - [Architecture Guide](docs/architecture.md) - System design, components, and data flow
 - [GitHub Actions](docs/github_actions.md) - Workflow automation and scheduling
+- [Jenkins](docs/jenkins.md) - CI/CD pipeline for automated Docker image builds and publishing to GHCR
 
 ## 🛠 Tech Stacks
 
@@ -32,7 +35,7 @@ Please refer to this [Installation Guide](docs/installation.md)
 ![Google Sheets API](https://img.shields.io/badge/Google%20Sheets-34A853.svg?style=for-the-badge&logo=Google-Sheets&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED.svg?style=for-the-badge&logo=Docker&logoColor=white)
 ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-A22846.svg?style=for-the-badge&logo=Raspberry-Pi&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF.svg?style=for-the-badge&logo=GitHub-Actions&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF.svg?style=for-the-badge&logo=GitHub-Actions&logoColor=white) ![Jenkins](https://img.shields.io/badge/Jenkins-232C3D.svg?style=for-the-badge&logo=Jenkins&logoColor=white)
 
 ## 💡 Technical Insights
 
