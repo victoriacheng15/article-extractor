@@ -4,7 +4,7 @@ This document outlines the structure, components, and data flow of the articles-
 
 ## Overview
 
-articles-extractor is a **serverless ETL (Extract, Transform, Load) data pipeline** that orchestrates automated article extraction from multiple sources and aggregates them into a centralized Google Sheet. Built on **GitHub Actions for scheduling** (eliminating infrastructure overhead), the architecture showcases modern DataOps patterns: source aggregation, data transformation, deduplication, and infrastructure-as-code—all without requiring dedicated servers. It's designed to run on a schedule and support extensible provider configuration.
+articles-extractor is a **serverless ETL (Extract, Transform, Load) data pipeline** that orchestrates automated article extraction from multiple sources and aggregates them into a centralized Google Sheet. Built on **GitHub Actions for scheduling data extraction** and **Jenkins for CI/CD Docker image publishing**, the architecture showcases modern DataOps patterns: source aggregation, data transformation, deduplication, reproducible builds, and infrastructure-as-code—all without requiring dedicated infrastructure. The dual automation approach separates concerns: GitHub Actions handles scheduled data workflows (serverless), while Jenkins automates Docker image builds and publishing to GHCR. It's designed to run on a schedule, support extensible provider configuration, and enable containerized deployments.
 
 ## High-Level Data Flow (ETL Pipeline)
 
@@ -26,7 +26,9 @@ graph TD
 4. **Load**: Append new articles to Google Sheet and maintain metadata
 5. **Finalize**: Sort and timestamp the aggregated dataset
 
-## Project Structure
+## Project Setup & Configuration
+
+### Project Structure
 
 ```plaintext
 articles-extractor/
@@ -40,11 +42,45 @@ articles-extractor/
 │   └── constants.py       # Configuration constants
 ├── .github/workflows/
 │   └── scheduled_extraction.yml  # GitHub Actions workflow
-├── Dockerfile            # Docker container setup
-├── Makefile             # Development & deployment commands
-├── requirements.txt     # Python dependencies
-└── docs/                # Documentation
+├── Jenkinsfile             # Jenkins CI/CD pipeline definition
+├── Dockerfile              # Docker container setup
+├── docker-compose.yml      # Local development & deployment
+├── Makefile                # Development & deployment commands
+├── requirements.txt        # Python dependencies
+├── credentials.json        # Google API credentials (gitignored)
+└── docs/                   # Documentation
+    ├── architecture.md     # This file - system design & data flow
+    ├── github_actions.md   # GitHub Actions workflow automation
+    └── jenkins.md          # Jenkins CI/CD pipeline setup
 ```
+
+### Dependencies
+
+#### External Libraries
+
+- **gspread** - Google Sheets API client
+- **google-auth** - Google authentication
+- **beautifulsoup4** - HTML parsing
+- **httpx** - Async HTTP client
+
+#### Google APIs
+
+- **Google Sheets API** - Store and retrieve data
+- **Google OAuth 2.0** - Authentication
+
+### Configuration
+
+#### Environment Variables
+
+- `SHEET_ID` - Google Sheet ID (required)
+- `CREDENTIALS` - JSON credentials file (required for auth)
+
+#### Rate Limiting
+
+Configured in `utils/constants.py`:
+
+- Request interval between calls: 1.0 second
+- HTTP timeout: 30 seconds
 
 ## Core Components (Pipeline Stages)
 
@@ -155,34 +191,6 @@ flowchart TD
 - **Data consistency**: All articles are sorted after load; metadata is timestamped
 - **Fault isolation**: Provider errors don't halt other providers
 
-## Dependencies
-
-### External Libraries
-
-- **gspread** - Google Sheets API client
-- **google-auth** - Google authentication
-- **beautifulsoup4** - HTML parsing
-- **httpx** - Async HTTP client
-
-### Google APIs
-
-- **Google Sheets API** - Store and retrieve data
-- **Google OAuth 2.0** - Authentication
-
-## Configuration
-
-### Environment Variables
-
-- `SHEET_ID` - Google Sheet ID (required)
-- `CREDENTIALS` - JSON credentials file (required for auth)
-
-### Rate Limiting
-
-Configured in `utils/constants.py`:
-
-- Request interval between calls: 1.0 second
-- HTTP timeout: 30 seconds
-
 ## Error Handling & Resilience
 
 The pipeline implements **fault-tolerant design** common in production data systems:
@@ -248,3 +256,35 @@ These logs enable downstream monitoring, alerting, and audit trails—essential 
 - Current design supports adding providers via configuration (no code changes needed)
 - Generator architecture allows processing very large datasets without memory concerns
 - Multi-provider parallelization can be enabled by using async/await patterns or scheduled concurrency
+
+## Deployment & Automation
+
+The project uses a **dual automation approach** for data extraction and image publishing:
+
+### GitHub Actions: Scheduled Data Extraction
+
+GitHub Actions runs the data extraction pipeline on a schedule (default: daily at 6:00 AM UTC):
+
+- **Serverless execution**: No infrastructure to maintain
+- **Scheduled runs**: Cron-based automation (configurable)
+- **Built-in logging**: Logs stored in GitHub for review and debugging
+- **Cost-efficient**: Included in free tier for public repositories
+
+See [`GitHub Actions`](github_actions.md) for workflow details and configuration.
+
+### Jenkins: Docker Image Building & Publishing
+
+Jenkins (typically self-hosted via Docker Compose) automates Docker image builds and publishes to GHCR:
+
+- **Reproducible builds**: Versioned Docker images (tagged by build number + `latest`)
+- **SCM polling**: Checks for code changes on a schedule (default: every Tuesday)
+- **CI/CD automation**: Decouples image builds from data extraction workflows
+- **Self-hosted flexibility**: Can be run on any machine with Docker
+
+See [`Jenkins`](jenkins.md) for pipeline configuration and setup.
+
+### Architecture Summary
+
+- **Data extraction** (GitHub Actions) → automated article collection and Google Sheets updates
+- **Docker image publishing** (Jenkins) → reproducible, versioned container images for deployment
+- Together, these provide a complete automated, production-grade data pipeline with containerized deployment options
