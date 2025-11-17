@@ -16,8 +16,9 @@ An **automated data pipeline** that orchestrates ETL (Extract, Transform, Load) 
 - **Data Deduplication**: Intelligent duplicate detection and skipping for data quality
 - **Google Sheets Integration**: OAuth-authenticated API for reliable data delivery
 - **Flexible Deployment**: GitHub Actions (serverless), Docker, cron, or CLI execution
-- **Production-Grade Error Handling**: Provider-level fault tolerance with comprehensive logging
-- **Automated Docker Image Builds**: Jenkins pipeline builds and pushes Docker images to GHCR on demand or schedule
+- **CI/CD Automation**:
+  - **GitHub Actions**: Automatic code formatting checks (ruff) on pull requests and pushes
+  - **Jenkins**: Code formatting validation, Docker image builds, and versioned image publishing to GHCR
 
 ## 🚀 Quick Start
 
@@ -27,15 +28,15 @@ Please refer to this [Installation Guide](docs/installation.md)
 
 - [Architecture Guide](docs/architecture.md) - System design, components, and data flow
 - [GitHub Actions](docs/github_actions.md) - Workflow automation and scheduling
-- [Jenkins](docs/jenkins.md) - CI/CD pipeline for automated Docker image builds and publishing to GHCR
+- [Jenkins](docs/jenkins.md) - CI/CD exploration: comparing Jenkins with GitHub Actions for Docker image builds and GHCR publishing
 
 ## 🛠 Tech Stacks
 
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg?style=for-the-badge&logo=Python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB.svg?style=for-the-badge&logo=Python&logoColor=white)
 ![Google Sheets API](https://img.shields.io/badge/Google%20Sheets-34A853.svg?style=for-the-badge&logo=Google-Sheets&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED.svg?style=for-the-badge&logo=Docker&logoColor=white)
 ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-A22846.svg?style=for-the-badge&logo=Raspberry-Pi&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF.svg?style=for-the-badge&logo=GitHub-Actions&logoColor=white) ![Jenkins](https://img.shields.io/badge/Jenkins-232C3D.svg?style=for-the-badge&logo=Jenkins&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF.svg?style=for-the-badge&logo=GitHub-Actions&logoColor=white) ![Jenkins](https://img.shields.io/badge/Jenkins-D24939.svg?style=for-the-badge&logo=Jenkins&logoColor=white)
 
 ## 💡 Technical Insights
 
