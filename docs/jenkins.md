@@ -1,10 +1,10 @@
 # Jenkins CI/CD
 
-This document explains the Jenkins pipeline used to automate Docker image builds and publishing to GitHub Container Registry (GHCR).
+This document explains the Jenkins pipeline used to automate code formatting checks, Docker image builds, and publishing to GitHub Container Registry (GHCR).
 
 ## Overview
 
-Jenkins was added to this project mainly out of curiosity—to see how Jenkins CI/CD compares to GitHub Actions for automating Docker image builds and publishing to GHCR. The pipeline is defined in the [`Jenkinsfile`](../Jenkinsfile) at the project root and is typically run on a self-hosted Jenkins server (often via Docker Compose). This setup is not strictly required, but provides a hands-on comparison of two popular automation platforms.
+Jenkins was added to this project mainly out of curiosity—to see how Jenkins CI/CD compares to GitHub Actions for automating Docker image builds, running code formatting checks, and publishing to GHCR. The pipeline, defined in the [`Jenkinsfile`](../Jenkinsfile) at the project root, now includes a code formatting stage (using `ruff`) before building and publishing the Docker image. Jenkins is typically run on a self-hosted server (often via Docker Compose). This setup is not strictly required, but provides a hands-on comparison of two popular automation platforms.
 
 ## Pipeline Workflow
 
@@ -34,16 +34,16 @@ Jenkins was added to this project mainly out of curiosity—to see how Jenkins C
 ### Visualize the Workflow
 
 ```mermaid
-graph TD
-    Start["🚀 Start"] --> Clean["Clean Workspace<br/>Delete old files"]
-    Clean --> Format["Code Formatting Check<br/>ruff format check"]
-    Format -->|Pass| Build["Build Docker Image<br/>Tag with BUILD_NUMBER"]
-    Format -->|Fail| End1["❌ Build Failed"]
-    Build --> Login["Login to GHCR<br/>Authenticate with PAT"]
-    Login --> PushVersion["Push Versioned Image<br/>ghcr.io/.../article-extractor:N"]
-    PushVersion --> PushLatest["Push Latest Tag<br/>ghcr.io/.../articles-extractor:latest"]
-    PushLatest --> Logout["Logout from GHCR<br/>Cleanup credentials"]
-    Logout --> End2["✅ Pipeline Complete"]
+flowchart TD
+  Start["🚀 Start"] --> Clean["Clean Workspace\nDelete old files"]
+  Clean --> Format["Code Formatting Check\nPython 3.12 + ruff"]
+  Format -->|Pass| Build["Build Docker Image\nTag with BUILD_NUMBER"]
+  Format -->|Fail| End1["❌ Build Failed"]
+  Build --> Login["Login to GHCR\nAuthenticate with PAT"]
+  Login --> PushVersion["Push Versioned Image\nghcr.io/.../articles-extractor:N"]
+  PushVersion --> PushLatest["Push Latest Tag\nghcr.io/.../articles-extractor:latest"]
+  PushLatest --> Logout["Logout from GHCR\nCleanup credentials"]
+  Logout --> End2["✅ Pipeline Complete"]
 ```
 
 ---
@@ -55,22 +55,43 @@ graph TD
 - Jenkins container must have access to the Docker daemon and CLI (see below)
 - GitHub PAT with `write:packages` scope stored in Jenkins credentials as `GHCR_PAT`
 
+**Example `dockerfile`:**
+
+```yaml
+FROM jenkins/jenkins:lts
+
+USER root
+
+# Install Docker CLI
+RUN apt-get update && \
+    apt-get install -y docker.io && \
+    rm -rf /var/lib/apt/lists/*
+
+# Ensure the 'docker' group has GID 111 (your host's GID)
+# If group exists, change its GID; if not, create it.
+RUN if getent group docker > /dev/null; then \
+        groupmod -g 111 docker; \
+    else \
+        groupadd -g 111 docker; \
+    fi && \
+    usermod -aG docker jenkins
+
+USER jenkins
+```
+
 **Example `docker-compose.yaml`:**
 
 ```yaml
-services:
-  image: jenkins/jenkins:lts
+jenkins:
+  build: ./docker/jenkins
   container_name: jenkins_server
-  user: root
   ports:
     - "8080:8080"
     - "50000:50000"
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
     - jenkins_data:/var/jenkins_home
-    - /usr/bin/docker:/usr/bin/docker
-  env_file:
-    - .env
+  restart: unless-stopped
 
 volumes:
   jenkins_data:
@@ -98,13 +119,19 @@ For the complete Docker Compose setup, refer to the [`docker-compose.yml`](https
     rm -rf /var/jenkins_home/workspace/<job_name>
     ```
 
-  - Or rely on the automated cleanup step included in the pipeline
-- **`docker: not found`**: Ensure `/usr/bin/docker` is mounted and Docker is installed on the host
-- **Permission errors**: Ensure Jenkins runs as `root` and has access to the Docker socket
-- **Credential errors**: Ensure the GitHub PAT is stored as `GHCR_PAT` in Jenkins credentials
-- **Python commands fail**:
-  - The Code Formatting Check stage runs inside a Python Docker agent (python:3.12-alpine).
-  - Ensure the Docker daemon is running and the host can pull/run the Python image.
+  - If you cannot delete the folder from inside the Jenkins container (due to permissions or other issues), you can find the actual host path for the Jenkins data volume and delete it directly from the host machine:
+
+    - Find the mountpoint for your Jenkins data volume (e.g., `jenkins_data`) using and look for `Mountpoint` to see where the data is stored on the host machine:
+
+    ```bash
+    docker volume inspect jenkins_data
+    ```
+
+    - On your host machine, delete the workspace folder directly:
+
+    ```bash
+    rm -rf /path/to/mountpoint/workspace/<job_name>
+    ```
 
 ---
 
