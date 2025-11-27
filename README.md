@@ -5,7 +5,6 @@ An **automated data pipeline** that orchestrates ETL (Extract, Transform, Load) 
 **Deployment Options:**
 
 - **Serverless**: GitHub Actions runs the workflow on a scheduled cron to automate extraction and processing
-- **CI/CD**: Jenkins pipeline for automated Docker image builds and publishing to GitHub Container Registry (GHCR)
 - **Traditional**: Cron jobs or Docker containers
 - **Manual**: CLI execution for ad-hoc runs
 
@@ -18,7 +17,6 @@ An **automated data pipeline** that orchestrates ETL (Extract, Transform, Load) 
 - **Flexible Deployment**: GitHub Actions (serverless), Docker, cron, or CLI execution
 - **CI/CD Automation**:
   - **GitHub Actions**: Automatic code formatting checks (ruff) on pull requests and pushes
-  - **Jenkins**: Code formatting validation, Docker image builds, and versioned image publishing to GHCR
 
 ## 🚀 Quick Start
 
@@ -28,7 +26,7 @@ Please refer to this [Installation Guide](docs/installation.md)
 
 - [Architecture Guide](docs/architecture.md) - System design, components, and data flow
 - [GitHub Actions](docs/github_actions.md) - Workflow automation and scheduling
-- [Jenkins](docs/jenkins.md) - CI/CD exploration: comparing Jenkins with GitHub Actions for Docker image builds and GHCR publishing
+- [Jenkins](docs/jenkins.md) - (For curiosity) CI/CD comparison with GitHub Actions
 
 ## 🛠 Tech Stacks
 
@@ -36,7 +34,7 @@ Please refer to this [Installation Guide](docs/installation.md)
 ![Google Sheets API](https://img.shields.io/badge/Google%20Sheets-34A853.svg?style=for-the-badge&logo=Google-Sheets&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED.svg?style=for-the-badge&logo=Docker&logoColor=white)
 ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-A22846.svg?style=for-the-badge&logo=Raspberry-Pi&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF.svg?style=for-the-badge&logo=GitHub-Actions&logoColor=white) ![Jenkins](https://img.shields.io/badge/Jenkins-D24939.svg?style=for-the-badge&logo=Jenkins&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF.svg?style=for-the-badge&logo=GitHub-Actions&logoColor=white)
 
 ## 💡 Technical Insights
 
