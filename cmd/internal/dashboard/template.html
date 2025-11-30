@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.DashboardTitle}}</title>
     <style>
+        :root{
+            --bg1: #4facfe;
+            --bg2: #00f2fe;
+            --card1: #0369a1;
+            --card2: #0284c7;
+            --accent: #fb923c;
+            --accent-strong: #f97316;
+            --positive: #2b6cb0;
+            --unread: #fb923c;
+            --muted-bg: #f7fafc;
+            --muted-border: #e2e8f0;
+            --text-primary: #2d3748;
+            --text-muted: #718096;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,7 +28,7 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
             min-height: 100vh;
             padding: 2rem 1rem;
         }
@@ -52,20 +67,15 @@
         }
         
         article.metric-card {
-            background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+            background: linear-gradient(135deg, var(--card1) 0%, var(--card2) 100%);
             padding: 1.5rem;
             border-radius: 12px;
             text-align: center;
-            border: 2px solid #0ea5e9;
+            border: 2px solid var(--accent);
             color: white;
         }
         
         article.metric-card h2 {
-            color: white;
-        }
-        
-        article.metric-card.highlight {
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
             color: white;
         }
         
@@ -83,16 +93,48 @@
             font-weight: 700;
         }
         
+        .badges-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        article.badge-card {
+            /* highlights: blue background, white text, orange border */
+            background: linear-gradient(135deg, var(--card1) 0%, var(--card2) 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid var(--accent-strong);
+            color: white;
+            box-shadow: 0 4px 12px rgba(43, 108, 176, 0.12);
+        }
+        
+        .badge-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.9;
+            margin-bottom: 0.75rem;
+        }
+        
+        .badge-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
         section {
             margin: 3rem 0;
         }
         
         section > h2 {
             font-size: 1.4rem;
-            color: #2d3748;
+            color: var(--text-primary);
             margin-bottom: 1.5rem;
             font-weight: 600;
-            border-bottom: 3px solid #0369a1;
+            border-bottom: 3px solid var(--card1);
             padding-bottom: 0.5rem;
             display: inline-block;
         }
@@ -104,8 +146,8 @@
         }
         
         article.source-card {
-            background: #f7fafc;
-            border-left: 5px solid #0369a1;
+            background: var(--muted-bg);
+            border-left: 5px solid var(--card1);
             padding: 1.5rem;
             border-radius: 8px;
         }
@@ -136,10 +178,10 @@
         }
         
         article.month-card {
-            background: #f7fafc;
+            background: var(--muted-bg);
             padding: 1rem;
             border-radius: 8px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--muted-border);
         }
         
         article.month-card h3 {
@@ -188,9 +230,9 @@
             width: 100%;
             margin: 2rem 0;
             padding: 1.5rem;
-            background: #f7fafc;
+            background: var(--muted-bg);
             border-radius: 12px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--muted-border);
         }
         
         .chart-wrapper {
@@ -211,15 +253,14 @@
         <header>
             <h1>{{.DashboardTitle}}</h1>
             <time>Last updated: {{.LastUpdated.Format "Jan 02, 2006 at 3:04 PM"}}</time>
-        </header>
-        
+        </header>        
         <section aria-label="Key Metrics">
             <div class="metrics-grid">
                 <article class="metric-card">
                     <h2>Total Articles</h2>
                     <div class="metric-value">{{.TotalArticles}}</div>
                 </article>
-                <article class="metric-card highlight">
+                <article class="metric-card">
                     <h2>Read Rate</h2>
                     <div class="metric-value">{{printf "%.1f" .ReadRate}}%</div>
                 </article>
@@ -235,6 +276,39 @@
                     <h2>Avg/Month</h2>
                     <div class="metric-value">{{printf "%.0f" .AvgArticlesPerMonth}}</div>
                 </article>
+                <!-- waiting to implement for later -->
+                <!-- <article class="metric-card">
+                    <h2>MoM Growth</h2>
+                    <div class="metric-value" id="momGrowthValue">—</div>
+                </article>
+                <article class="metric-card">
+                    <h2>YoY Growth</h2>
+                    <div class="metric-value" id="yoyGrowthValue">—</div>
+                </article> -->
+            </div>
+        </section>
+        
+        <section aria-label="Highlights & Badges">
+            <h2>🏆 Highlights</h2>
+            <div class="badges-grid">
+                {{if .TopReadRateSource}}
+                <article class="badge-card">
+                    <div class="badge-title">🎯 Top Read Rate Source</div>
+                    <div class="badge-value">{{.TopReadRateSource}}</div>
+                </article>
+                {{end}}
+                {{if .MostUnreadSource}}
+                <article class="badge-card">
+                    <div class="badge-title">📚 Most Unread Source</div>
+                    <div class="badge-value">{{.MostUnreadSource}}</div>
+                </article>
+                {{end}}
+                {{if gt .ThisMonthArticles 0}}
+                <article class="badge-card">
+                    <div class="badge-title">✅ Read This Month</div>
+                    <div class="badge-value">{{.ThisMonthArticles}}</div>
+                </article>
+                {{end}}
             </div>
         </section>
         
@@ -258,7 +332,7 @@
                             <strong>{{.Unread}}</strong>
                         </div>
                         {{if gt .AuthorCount 0}}
-                        <div class="stat-line" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #cbd5e0; font-size: 0.8rem; opacity: 0.7;">
+                        <div class="stat-line" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--muted-border); font-size: 0.8rem; opacity: 0.7;">
                             <span>Per author:</span>
                             <strong>{{printf "%.0f" (divideFloat .Count .AuthorCount)}} articles</strong>
                         </div>
@@ -270,7 +344,13 @@
         </section>
         
         <section aria-label="Yearly Breakdown">
-            <h2>📅 By Year</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0;">📈 Yearly Breakdown</h2>
+                <select id="yearViewToggle" style="padding: 0.5rem 1rem; border-radius: 6px; border: 2px solid var(--card1); background: white; color: #2d3748; font-weight: 600; cursor: pointer; font-size: 0.95rem;">
+                    <option value="bar">Bar Chart</option>
+                    <option value="line">Line Chart</option>
+                </select>
+            </div>
             <div class="chart-container">
                 <div class="chart-wrapper">
                     <canvas id="yearChart"></canvas>
@@ -279,12 +359,18 @@
         </section>
         
         <section aria-label="Monthly Breakdown">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2>📊 Monthly Breakdown</h2>
-                <select id="monthViewToggle" style="padding: 0.5rem 1rem; border-radius: 6px; border: 2px solid #667eea; background: white; color: #2d3748; font-weight: 600; cursor: pointer; font-size: 0.95rem;">
-                    <option value="total">Total Articles</option>
-                    <option value="stacked">By Source</option>
-                </select>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0;">📊 Monthly Breakdown</h2>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <select id="sourceFilter" style="padding: 0.5rem 1rem; border-radius: 6px; border: 2px solid var(--card1); background: white; color: #2d3748; font-weight: 600; cursor: pointer; font-size: 0.95rem;">
+                        <option value="all">All Sources</option>
+                        {{range .AllSources}}<option value="{{.}}">{{.}}</option>{{end}}
+                    </select>
+                    <select id="monthViewToggle" style="padding: 0.5rem 1rem; border-radius: 6px; border: 2px solid var(--card1); background: white; color: #2d3748; font-weight: 600; cursor: pointer; font-size: 0.95rem;">
+                        <option value="total">Total Articles</option>
+                        <option value="stacked">By Source</option>
+                    </select>
+                </div>
             </div>
             <div class="chart-container">
                 <div class="chart-wrapper">
@@ -293,57 +379,152 @@
             </div>
         </section>
         
+        <section aria-label="Read/Unread Breakdown">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0;">📖 Read/Unread Breakdown</h2>
+                <select id="readUnreadViewToggle" style="padding: 0.5rem 1rem; border-radius: 6px; border: 2px solid var(--card1); background: white; color: #2d3748; font-weight: 600; cursor: pointer; font-size: 0.95rem;">
+                    <option value="byMonth">By Month</option>
+                    <option value="bySource">By Source</option>
+                </select>
+            </div>
+            <div class="chart-container">
+                <div class="chart-wrapper">
+                    <canvas id="readUnreadChart"></canvas>
+                </div>
+            </div>
+        </section>
+        
         <footer>
-            <p>📈 Automatically generated from Google Sheets • Updated daily via GitHub Actions</p>
+            <p>📈 Automatically generated from Google Sheets • Updated weekly via GitHub Actions</p>
         </footer>
     </main>
     
     <script>
-        // Year chart
-        const yearCtx = document.getElementById('yearChart').getContext('2d');
-        new Chart(yearCtx, {
-            type: 'bar',
-            data: {
-                labels: {{.YearChartLabels}},
-                datasets: [{
-                    label: 'Articles by Year',
-                    data: {{.YearChartData}},
-                    backgroundColor: [
-                        '#667eea',
-                        '#764ba2',
-                        '#f093fb',
-                        '#4facfe',
-                        '#00f2fe',
-                        '#43e97b',
-                        '#fa709a'
-                    ],
-                    borderColor: '#2d3748',
-                    borderWidth: 2,
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            font: { size: 12 }
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            font: { size: 12 }
-                        }
-                    }
-                }
+        // Year chart data
+        const yearChartLabels = {{.YearChartLabels}};
+        const yearChartData = {{.YearChartData}};
+        const allYears = {{.AllYearsJSON}};
+        const allSources = {{.AllSourcesJSON}};
+        const readUnreadByMonthData = {{.ReadUnreadByMonthJSON}};
+        const readUnreadBySourceData = {{.ReadUnreadBySourceJSON}};
+        
+        // Growth/Trend placeholders
+        const momGrowthEl = document.getElementById('momGrowthValue');
+        const yoyGrowthEl = document.getElementById('yoyGrowthValue');
+        
+        let yearChart = null;
+        let currentYearViewMode = 'bar';
+        
+        function updateYearChart(viewMode) {
+            if (yearChart) {
+                yearChart.destroy();
             }
+            
+            const yearCtx = document.getElementById('yearChart').getContext('2d');
+            
+            if (viewMode === 'bar') {
+                yearChart = new Chart(yearCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: yearChartLabels,
+                        datasets: [{
+                            label: 'Articles by Year',
+                            data: yearChartData,
+                            backgroundColor: [
+                                '#2b6cb0',
+                                '#60a5fa',
+                                '#3b82f6',
+                                '#fb923c',
+                                '#f97316',
+                                '#93c5fd',
+                                '#60a5fa'
+                            ],
+                            borderColor: '#2d3748',
+                            borderWidth: 2,
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    font: { size: 12 }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    font: { size: 12 }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                yearChart = new Chart(yearCtx, {
+                    type: 'line',
+                    data: {
+                        labels: yearChartLabels,
+                        datasets: [{
+                            label: 'Articles by Year',
+                            data: yearChartData,
+                            borderColor: '#2b6cb0',
+                            backgroundColor: 'rgba(43, 108, 176, 0.08)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 6,
+                            pointBackgroundColor: '#2b6cb0',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                labels: {
+                                    font: { size: 12 },
+                                    usePointStyle: true
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    font: { size: 12 }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    font: { size: 12 }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Initialize year chart with bar view
+        updateYearChart('bar');
+        
+        // Add event listener for year chart view toggle
+        document.getElementById('yearViewToggle').addEventListener('change', function(e) {
+            currentYearViewMode = e.target.value;
+            console.log('Year view mode changed:', currentYearViewMode);
+            updateYearChart(currentYearViewMode);
         });
         
         // Month chart data
@@ -352,29 +533,47 @@
         const monthTotalData = {{.MonthTotalData}};
         
         let monthChart = null;
+        let currentSourceFilter = 'all';
+        
+        function filterMonthData() {
+            let filteredLabels = monthChartLabels;
+            let filteredTotalData = monthTotalData;
+            let filteredDatasets = monthChartDatasets;
+            
+            // Filter datasets by source if a specific source is selected
+            if (currentSourceFilter !== 'all') {
+                const sourceDataset = monthChartDatasets.find(dataset => dataset.label === currentSourceFilter);
+                if (sourceDataset) {
+                    filteredDatasets = [sourceDataset];
+                }
+            }
+            
+            return { filteredLabels, filteredTotalData, filteredDatasets };
+        }
         
         function updateMonthChart(view) {
             if (monthChart) {
                 monthChart.destroy();
             }
             
+            const { filteredLabels, filteredTotalData, filteredDatasets } = filterMonthData();
             const monthCtx = document.getElementById('monthChart').getContext('2d');
             
             if (view === 'total') {
                 monthChart = new Chart(monthCtx, {
                     type: 'line',
                     data: {
-                        labels: monthChartLabels,
+                        labels: filteredLabels,
                         datasets: [{
                             label: 'Total Articles',
-                            data: monthTotalData,
-                            borderColor: '#667eea',
-                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            data: filteredTotalData,
+                            borderColor: '#2b6cb0',
+                            backgroundColor: 'rgba(43, 108, 176, 0.08)',
                             borderWidth: 3,
                             fill: true,
                             tension: 0.4,
                             pointRadius: 5,
-                            pointBackgroundColor: '#764ba2',
+                            pointBackgroundColor: '#2b6cb0',
                             pointBorderColor: '#fff',
                             pointBorderWidth: 2,
                             pointHoverRadius: 7
@@ -411,8 +610,8 @@
                 monthChart = new Chart(monthCtx, {
                     type: 'bar',
                     data: {
-                        labels: monthChartLabels,
-                        datasets: monthChartDatasets
+                        labels: filteredLabels,
+                        datasets: filteredDatasets
                     },
                     options: {
                         responsive: true,
@@ -449,9 +648,151 @@
         // Initialize with total view
         updateMonthChart('total');
         
-        // Add event listener to dropdown
+        // Add event listeners to dropdowns
+        document.getElementById('sourceFilter').addEventListener('change', function(e) {
+            currentSourceFilter = e.target.value;
+            console.log('Source filter changed:', currentSourceFilter);
+            console.log('All sources available:', allSources);
+            
+            // If a specific source is selected, automatically switch to "By Source" view
+            if (currentSourceFilter !== 'all') {
+                document.getElementById('monthViewToggle').value = 'stacked';
+                updateMonthChart('stacked');
+            } else {
+                // If "All Sources" is selected, switch back to "Total Articles"
+                document.getElementById('monthViewToggle').value = 'total';
+                updateMonthChart('total');
+            }
+        });
+        
         document.getElementById('monthViewToggle').addEventListener('change', function(e) {
+            console.log('Month view toggled:', e.target.value);
             updateMonthChart(e.target.value);
+        });
+
+        let readUnreadChart = null;
+        let currentReadUnreadView = 'byMonth';
+        
+        function updateReadUnreadChart(view) {
+            if (readUnreadChart) {
+                readUnreadChart.destroy();
+            }
+            
+            const readUnreadCtx = document.getElementById('readUnreadChart').getContext('2d');
+            
+            if (view === 'byMonth') {
+                readUnreadChart = new Chart(readUnreadCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: readUnreadByMonthData.labels,
+                        datasets: [
+                            {
+                                label: 'Read',
+                                data: readUnreadByMonthData.readData,
+                                backgroundColor: '#2b6cb0',
+                                borderColor: '#2d3748',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Unread',
+                                data: readUnreadByMonthData.unreadData,
+                                backgroundColor: '#fb923c',
+                                borderColor: '#2d3748',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                stacked: true,
+                                ticks: {
+                                    font: { size: 11 }
+                                }
+                            },
+                            y: {
+                                stacked: true,
+                                beginAtZero: true,
+                                ticks: {
+                                    font: { size: 12 }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                labels: {
+                                    font: { size: 12 },
+                                    usePointStyle: true
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                readUnreadChart = new Chart(readUnreadCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: readUnreadBySourceData.labels,
+                        datasets: [
+                            {
+                                label: 'Read',
+                                data: readUnreadBySourceData.readData,
+                                backgroundColor: '#2b6cb0',
+                                borderColor: '#2d3748',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Unread',
+                                data: readUnreadBySourceData.unreadData,
+                                backgroundColor: '#fb923c',
+                                borderColor: '#2d3748',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                stacked: true,
+                                ticks: {
+                                    font: { size: 11 }
+                                }
+                            },
+                            y: {
+                                stacked: true,
+                                beginAtZero: true,
+                                ticks: {
+                                    font: { size: 12 }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                labels: {
+                                    font: { size: 12 },
+                                    usePointStyle: true
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Initialize read/unread chart
+        updateReadUnreadChart('byMonth');
+        
+        // Add event listener for read/unread view toggle
+        document.getElementById('readUnreadViewToggle').addEventListener('change', function(e) {
+            currentReadUnreadView = e.target.value;
+            console.log('Read/unread view changed:', currentReadUnreadView);
+            updateReadUnreadChart(currentReadUnreadView);
         });
     </script>
 </body>

@@ -56,6 +56,55 @@ func loadLatestMetrics() (schema.Metrics, error) {
 	return metrics, nil
 }
 
+// calculateTopReadRateSource finds the source with the highest read rate
+func calculateTopReadRateSource(metrics schema.Metrics) string {
+	var topSource string
+	var topRate float64
+	for name, counts := range metrics.BySourceReadStatus {
+		if name == "substack_author_count" {
+			continue
+		}
+		total := counts[0] + counts[1]
+		if total > 0 {
+			rate := float64(counts[0]) / float64(total) * 100
+			if rate > topRate {
+				topRate = rate
+				topSource = name
+			}
+		}
+	}
+	return topSource
+}
+
+// calculateMostUnreadSource finds the source with the most unread articles
+func calculateMostUnreadSource(metrics schema.Metrics) string {
+	var mostUnreadSource string
+	var maxUnread int
+	for name, unread := range metrics.UnreadBySource {
+		if unread > maxUnread {
+			maxUnread = unread
+			mostUnreadSource = name
+		}
+	}
+	return mostUnreadSource
+}
+
+// calculateThisMonthArticles calculates articles read this month (current month)
+func calculateThisMonthArticles(metrics schema.Metrics) int {
+	// Get current month in MM format
+	currentMonth := fmt.Sprintf("%02d", 11) // November for now, can be dynamic
+
+	// Sum all read articles from by_month_and_source_read_status for current month
+	if monthData, exists := metrics.ByMonthAndSource[currentMonth]; exists {
+		total := 0
+		for _, counts := range monthData {
+			total += counts[0] // read count
+		}
+		return total
+	}
+	return 0
+}
+
 // generateHTMLDashboard creates and saves the HTML dashboard file
 func generateHTMLDashboard(metrics schema.Metrics) error {
 	// Sort sources by count
@@ -89,22 +138,6 @@ func generateHTMLDashboard(metrics schema.Metrics) error {
 		return sources[i].Count > sources[j].Count
 	})
 
-	// Build month info
-	monthNames := []string{"", "January", "February", "March", "April", "May", "June",
-		"July", "August", "September", "October", "November", "December"}
-	var months []schema.MonthInfo
-	for month := 1; month <= 12; month++ {
-		monthStr := fmt.Sprintf("%02d", month)
-		if total, exists := metrics.ByMonthOnly[monthStr]; exists && total > 0 {
-			months = append(months, schema.MonthInfo{
-				Name:    monthNames[month],
-				Month:   monthStr,
-				Total:   total,
-				Sources: metrics.ByMonthAndSource[monthStr],
-			})
-		}
-	}
-
 	// Build year info
 	var years []schema.YearInfo
 	for year, count := range metrics.ByYear {
@@ -114,6 +147,59 @@ func generateHTMLDashboard(metrics schema.Metrics) error {
 		return years[i].Year > years[j].Year
 	})
 
+	// Build month info using new schema with read/unread status
+	monthNames := []string{"", "January", "February", "March", "April", "May", "June",
+		"July", "August", "September", "October", "November", "December"}
+
+	// Create aggregated monthly data (Jan-Dec, all years combined)
+	var monthlyAggregated []schema.MonthInfo
+	monthAggregateData := make(map[int]map[string]int) // month -> source -> count
+
+	for month := 1; month <= 12; month++ {
+		monthStr := fmt.Sprintf("%02d", month)
+		monthAggregateData[month] = make(map[string]int)
+
+		// Get source data for this month from ByMonthAndSource (aggregated across all years)
+		if monthSourceData, exists := metrics.ByMonthAndSource[monthStr]; exists {
+			total := 0
+			sources := make(map[string]int)
+
+			for source, counts := range monthSourceData {
+				articleCount := counts[0] + counts[1] // read + unread
+				sources[source] = articleCount
+				monthAggregateData[month][source] = articleCount
+				total += articleCount
+			}
+
+			if total > 0 {
+				monthlyAggregated = append(monthlyAggregated, schema.MonthInfo{
+					Name:    monthNames[month],
+					Month:   monthStr,
+					Year:    "", // No year for aggregated monthly view
+					Total:   total,
+					Sources: sources,
+				})
+			}
+		}
+	}
+
+	// Extract all unique years for filtering
+	var allYears []string
+	for _, year := range years {
+		allYears = append(allYears, year.Year)
+	}
+
+	// Extract all unique sources for filtering
+	var allSources []string
+	for _, source := range sources {
+		allSources = append(allSources, source.Name)
+	}
+
+	// Calculate badges using new aggregates
+	topReadRateSource := calculateTopReadRateSource(metrics)
+	mostUnreadSource := calculateMostUnreadSource(metrics)
+	thisMonthArticles := calculateThisMonthArticles(metrics)
+
 	// Load HTML template from file
 	templateContent, err := dashboard.LoadTemplateContent()
 	if err != nil {
@@ -121,20 +207,23 @@ func generateHTMLDashboard(metrics schema.Metrics) error {
 	}
 
 	// Parse and execute template
-	tmpl := template.New("dashboard")
-	tmpl.Funcs(template.FuncMap{
+	funcMap := template.FuncMap{
 		"divideFloat": func(a, b int) float64 {
 			if b == 0 {
 				return 0
 			}
 			return float64(a) / float64(b)
 		},
-	})
+	}
+
+	tmpl := template.New("dashboard").Funcs(funcMap)
 
 	tmpl, err = tmpl.Parse(templateContent)
 	if err != nil {
 		return fmt.Errorf("failed to parse HTML template: %w", err)
 	}
+
+	log.Println("✅ Template parsed successfully")
 
 	// Create site directory
 	os.MkdirAll("site", 0755)
@@ -148,29 +237,89 @@ func generateHTMLDashboard(metrics schema.Metrics) error {
 
 	// Prepare chart data using dashboard helpers
 	yearChartData := dashboard.PrepareYearChartData(years)
-	monthChartData := dashboard.PrepareMonthChartData(months, sources)
+	monthChartData := dashboard.PrepareMonthChartData(monthlyAggregated, sources)
+
+	// Prepare read/unread data
+	readUnreadByMonthLabels := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+	readByMonthArray := make([]int, 12)
+	unreadByMonthArray := make([]int, 12)
+
+	for month := 1; month <= 12; month++ {
+		monthStr := fmt.Sprintf("%02d", month)
+		unread := 0
+		if u, exists := metrics.UnreadByMonth[monthStr]; exists {
+			unread = u
+		}
+		// Calculate read for this month
+		read := 0
+		if monthData, exists := metrics.ByMonth[monthStr]; exists {
+			read = monthData - unread
+		}
+		readByMonthArray[month-1] = read
+		unreadByMonthArray[month-1] = unread
+	}
+
+	readUnreadByMonthData := map[string]interface{}{
+		"labels":     readUnreadByMonthLabels,
+		"readData":   readByMonthArray,
+		"unreadData": unreadByMonthArray,
+	}
+	readUnreadByMonthJSON, _ := json.Marshal(readUnreadByMonthData)
+
+	// Build read/unread by source
+	readUnreadBySourceLabels := make([]string, 0)
+	readBySourceData := make([]int, 0)
+	unreadBySourceData := make([]int, 0)
+	for _, source := range sources {
+		readUnreadBySourceLabels = append(readUnreadBySourceLabels, source.Name)
+		readBySourceData = append(readBySourceData, source.Read)
+		unreadBySourceData = append(unreadBySourceData, source.Unread)
+	}
+
+	readUnreadBySourceJSON, _ := json.Marshal(map[string]interface{}{
+		"labels":     readUnreadBySourceLabels,
+		"readData":   readBySourceData,
+		"unreadData": unreadBySourceData,
+	})
+
+	// Marshal AllYears and AllSources to JSON for JavaScript
+	allYearsJSON, _ := json.Marshal(allYears)
+	allSourcesJSON, _ := json.Marshal(allSources)
 
 	// Execute template
 	data := map[string]interface{}{
-		"DashboardTitle":      dashboardTitle,
-		"TotalArticles":       metrics.TotalArticles,
-		"ReadCount":           metrics.ReadCount,
-		"UnreadCount":         metrics.UnreadCount,
-		"ReadRate":            metrics.ReadRate,
-		"AvgArticlesPerMonth": metrics.AvgArticlesPerMonth,
-		"LastUpdated":         metrics.LastUpdated,
-		"Sources":             sources,
-		"Months":              months,
-		"Years":               years,
-		"YearChartLabels":     template.JS(yearChartData.LabelsJSON),
-		"YearChartData":       template.JS(yearChartData.DataJSON),
-		"MonthChartLabels":    template.JS(monthChartData.LabelsJSON),
-		"MonthChartDatasets":  template.JS(monthChartData.DatasetsJSON),
-		"MonthTotalData":      template.JS(monthChartData.TotalDataJSON),
+		"DashboardTitle":         dashboardTitle,
+		"TotalArticles":          metrics.TotalArticles,
+		"ReadCount":              metrics.ReadCount,
+		"UnreadCount":            metrics.UnreadCount,
+		"ReadRate":               metrics.ReadRate,
+		"AvgArticlesPerMonth":    metrics.AvgArticlesPerMonth,
+		"LastUpdated":            metrics.LastUpdated,
+		"Sources":                sources,
+		"Months":                 monthlyAggregated,
+		"Years":                  years,
+		"AllYears":               allYears,
+		"AllSources":             allSources,
+		"AllYearsJSON":           template.JS(allYearsJSON),
+		"AllSourcesJSON":         template.JS(allSourcesJSON),
+		"YearChartLabels":        template.JS(yearChartData.LabelsJSON),
+		"YearChartData":          template.JS(yearChartData.DataJSON),
+		"MonthChartLabels":       template.JS(monthChartData.LabelsJSON),
+		"MonthChartDatasets":     template.JS(monthChartData.DatasetsJSON),
+		"MonthTotalData":         template.JS(monthChartData.TotalDataJSON),
+		"ReadUnreadByMonthJSON":  template.JS(readUnreadByMonthJSON),
+		"ReadUnreadBySourceJSON": template.JS(readUnreadBySourceJSON),
+		"TopReadRateSource":      topReadRateSource,
+		"MostUnreadSource":       mostUnreadSource,
+		"ThisMonthArticles":      thisMonthArticles,
 	}
+
+	log.Println("📊 Starting template execution...")
 
 	err = tmpl.Execute(file, data)
 	if err != nil {
+		log.Printf("❌ Template execution error: %v\n", err)
+		log.Printf("Error type: %T\n", err)
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
