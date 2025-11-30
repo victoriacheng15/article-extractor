@@ -16,6 +16,12 @@ const (
 	dashboardTitle = "📚 Personal Reading Analytics"
 )
 
+// KeyMetric is a simple title/value pair used to render the header metric cards
+type KeyMetric struct {
+	Title string
+	Value string
+}
+
 // loadLatestMetrics reads the most recent metrics JSON file from metrics/ folder
 func loadLatestMetrics() (schema.Metrics, error) {
 	entries, err := os.ReadDir("metrics")
@@ -286,9 +292,19 @@ func generateHTMLDashboard(metrics schema.Metrics) error {
 	allYearsJSON, _ := json.Marshal(allYears)
 	allSourcesJSON, _ := json.Marshal(allSources)
 
+	// Prepare key metrics (formatted strings) for template loop
+	keyMetrics := []KeyMetric{
+		{Title: "Total Articles", Value: fmt.Sprintf("%d", metrics.TotalArticles)},
+		{Title: "Read Rate", Value: fmt.Sprintf("%.1f%%", metrics.ReadRate)},
+		{Title: "Read", Value: fmt.Sprintf("%d", metrics.ReadCount)},
+		{Title: "Unread", Value: fmt.Sprintf("%d", metrics.UnreadCount)},
+		{Title: "Avg/Month", Value: fmt.Sprintf("%.0f", metrics.AvgArticlesPerMonth)},
+	}
+
 	// Execute template
 	data := map[string]interface{}{
 		"DashboardTitle":         dashboardTitle,
+		"KeyMetrics":             keyMetrics,
 		"TotalArticles":          metrics.TotalArticles,
 		"ReadCount":              metrics.ReadCount,
 		"UnreadCount":            metrics.UnreadCount,
