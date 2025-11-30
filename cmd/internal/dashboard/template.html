@@ -502,7 +502,8 @@
         updateYearChart('bar');
 
         // Add event listener for year chart view toggle
-        document.getElementById('yearViewToggle').addEventListener('change', (e) => {
+        const yearViewToggle = document.getElementById('yearViewToggle');
+        yearViewToggle.addEventListener('change', (e) => {
             currentYearViewMode = e.target.value;
             updateYearChart(currentYearViewMode);
         });
